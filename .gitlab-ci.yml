@@ -1,0 +1,8 @@
+image: alpine:latest
+
+shellcheck:
+  stage: test
+  before_script:
+    - wget https://storage.googleapis.com/shellcheck/shellcheck-stable.linux.x86_64.tar.xz -O - | xzcat | tar -xv
+  script:
+    - find -name '*.sh' | xargs ./shellcheck-stable/shellcheck -x
