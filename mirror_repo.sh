@@ -3,12 +3,14 @@
 set -euo pipefail
 
 MIRROR_REPOS=" \
-	openwrt/openwrt \
 	project/procd \
+	openwrt/openwrt \
 	project/firewall3 \
 	project/uci \
 	project/ubus \
+	project/rpcd \
 	project/netifd \
+	buildbot \
 "
 
 log() {
@@ -40,7 +42,8 @@ init_repo() {
 
 	git clone --mirror "${src}/${repo_path}.git" "$repo"
 	pushd "$repo" > /dev/null
-	git remote add --mirror=fetch target "git@code.fe80.eu:openwrt/$repo.git"
+	#git remote add --mirror=fetch target "git@code.fe80.eu:openwrt/$repo.git"
+	git remote add --mirror=fetch target "git@gitlab.com:openwrtorg/$repo.git"
 	git push target --all
 	popd > /dev/null
 
