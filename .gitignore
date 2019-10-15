@@ -1,1 +1,4 @@
 flyspray/token
+local.mk
+.venv
+gitweb/gitweb_index.html
