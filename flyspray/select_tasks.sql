@@ -27,4 +27,4 @@ tasks.operating_system = os.os_id AND
 tasks.task_type = tasktypes.tasktype_id
 
 order by
-tasks.last_edited_time desc
+tasks.date_opened desc, tasks.last_edited_time desc
