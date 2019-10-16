@@ -10,7 +10,7 @@ issue_url_template = "https://bugs.openwrt.org/index.php?do=details&task_id={}"
 
 gl = gitlab.Gitlab("https://code.fe80.eu", private_token=token)
 gl.auth()
-project = gl.projects.get(203) # openwrt/openwrt
+project = gl.projects.get(203)  # openwrt/openwrt
 
 
 def add_issue(i):
@@ -105,6 +105,7 @@ def delete_label(i):
     except:
         print("O", end="", flush=True)
 
+
 def delete_issue(i):
     try:
         project.issues.delete(i)
@@ -112,9 +113,10 @@ def delete_issue(i):
     except:
         print("#", end="", flush=True)
 
+
 issues = range(2, 2487)
-#labels = range(0, 500)
+# labels = range(0, 500)
 pool = Pool(50)
-#pool.map(delete_label, labels)
-#pool.map(delete_issue, issues)
+# pool.map(delete_label, labels)
+# pool.map(delete_issue, issues)
 pool.map(add_issue, issues)
