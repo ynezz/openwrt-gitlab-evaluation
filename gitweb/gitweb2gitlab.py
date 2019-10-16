@@ -63,6 +63,7 @@ class GitLabHelper(Gitlab):
         try:
             project.delete()
         except GitlabDeleteError as e:
+            print("[!] project_delete exception:", e)
             return False
 
         return True
@@ -88,8 +89,9 @@ class GitLabHelper(Gitlab):
             "public_builds": True,
         }
         try:
-            project = self.projects.create(new_project)
+            self.projects.create(new_project)
         except GitlabCreateError as e:
+            print("[!] project_create exception:", e)
             return False
 
         return True
@@ -114,7 +116,7 @@ def gitweb_index(url=GITWEB_URL, filename="gitweb_index.html"):
 def gitweb_projects():
     projects = []
 
-    project_re = '<a class="list" href="\?p=(project/[\w-]+.git);a=summary" title="([\w\d \(\)/;\'\.-]+)">'
+    project_re = r'<a class="list" href="\?p=(project/[\w-]+.git);a=summary" title="([\w\d \(\)/;\'\.-]+)">'
     project_re = re.compile(project_re)
 
     for match in project_re.finditer(gitweb_index()):
