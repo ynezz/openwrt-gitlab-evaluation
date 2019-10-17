@@ -1,6 +1,8 @@
 VENV_BIN:=.venv/bin
 PIP_VENV:=$(VENV_BIN)/pip3
 PYTHON_VENV:=$(VENV_BIN)/python3
+BLACK_VENV:=$(VENV_BIN)/black
+FLAKE8_VENV:=$(VENV_BIN)/flake8
 VENV_PREPARED:=$(VENV_BIN)/.prepared
 
 -include local.mk
@@ -22,6 +24,11 @@ $(VENV_PREPARED): requirements.txt
 
 freeze: $(VENV_PREPARED)
 	@$(PIP_VENV) freeze --local > requirements.txt
+
+reformat-lint: $(VENV_PREPARED)
+	$(BLACK_VENV) --verbose .
+	find . -type d -path *.venv* -prune -o -iname '*.py' -print | \
+		xargs --no-run-if-empty $(FLAKE8_VENV)
 
 clean:
 	@-rm .venv

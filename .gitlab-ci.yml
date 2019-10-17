@@ -1,5 +1,8 @@
 include:
   - remote: https://gitlab.com/ynezz/openwrt-ci/raw/master/openwrt-ci/gitlab/main.yml
 
-check scripts with shellcheck:
+check shell scripts with shellcheck:
   extends: .openwrt-shellcheck
+
+check Python scripts with black and flake8:
+  extends: .openwrt-pythoncheck

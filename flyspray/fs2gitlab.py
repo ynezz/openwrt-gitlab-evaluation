@@ -41,7 +41,6 @@ def add_task(task):
             except:
                 print("#", end="", flush=True)
 
-
         print("+", end="", flush=True)
 
     # is closed
