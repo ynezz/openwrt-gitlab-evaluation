@@ -19,16 +19,17 @@ GITLAB_GROUP = "openwrtorg"
 
 class GitLabHelper(Gitlab):
     def __init__(self, *args, **kwargs):
-        self._group_id = None
-        self.group = kwargs.pop("group")
+        self.group_ids = {}
         super().__init__(*args, **kwargs)
 
-    def group_id(self):
-        if self._group_id:
-            return self._group_id
+    def group_id(self, group):
+        id = self.group_ids.get(group)
+        if id:
+            return id
 
-        self._group_id = self.groups.get(self.group).id
-        return self._group_id
+        id = self.groups.get(group).id
+        self.group_ids[group] = id
+        return id
 
     def login(self):
         try:
@@ -38,30 +39,23 @@ class GitLabHelper(Gitlab):
 
         return True
 
-    def project_exists(self, name):
-        return self.project(name) is not None
+    def project_exists(self, project):
+        return self.project_get(project) is not None
 
-    def project(self, name):
-        project = None
+    def project_get(self, project):
+        p = None
 
         try:
-            project = self.projects.get("{0}/{1}".format(self.group, name))
+            p = self.projects.get(project.full_path)
         except GitlabGetError as e:
             if e.response_code != 404:
                 raise
 
-        return project
-
-    def project_delete_by_name(self, name):
-        project = self.project(name)
-        if not project:
-            return False
-
-        return self.project_delete(project)
+        return p
 
     def project_delete(self, project):
         try:
-            project.delete()
+            self.project_get(project).delete()
         except GitlabDeleteError as e:
             print("[!] project_delete exception:", e)
             return False
@@ -71,7 +65,7 @@ class GitLabHelper(Gitlab):
     def project_create(self, **kwargs):
         new_project = {
             "name": kwargs["name"],
-            "namespace_id": self.group_id(),
+            "namespace_id": self.group_id(kwargs["group"]),
             "description": kwargs.get("description", ""),
             "visibility": kwargs.get("visibility", "public"),
             "merge_method": kwargs.get("merge_method", "ff"),
@@ -113,32 +107,53 @@ def gitweb_index(url=GITWEB_URL, filename="gitweb_index.html"):
     return file_content(filename)
 
 
-def gitweb_projects():
-    projects = []
+def gitweb_repos_for_migration():
+    repos = []
 
-    project_re = r'<a class="list" href="\?p=(project/[\w-]+.git);a=summary" title="([\w\d \(\)/;\'\.-]+)">'
-    project_re = re.compile(project_re)
+    repo_re = r'<a class="list" href="\?p=(.*).git;a=summary" title="(.*)">'
+    repo_re = re.compile(repo_re)
 
-    for match in project_re.finditer(gitweb_index()):
+    for match in repo_re.finditer(gitweb_index()):
+        path = match.group(1)
+        name = path.split("/")[-1]
+        desc = match.group(2).replace("LEDE", "OpenWrt")
+
+        if "project/luci2" in path or "openwrt/staging" in path:
+            continue
+
+        group = GITLAB_GROUP
+        if "feed/" in path:
+            group = "{0}/feed".format(GITLAB_GROUP)
+        elif "project/" in path:
+            group = "{0}/project".format(GITLAB_GROUP)
+        elif path == "openwrt/openwrt":
+            group = "{0}/openwrt".format(GITLAB_GROUP)
+        elif "svn-archive/" in path:
+            group = "{0}/openwrt/svn-archive".format(GITLAB_GROUP)
+
         d = {
-            "repo_url": "{0}/{1}".format(GITWEB_URL, match.group(1)),
-            "name": match.group(1)[8:-4],
-            "description": match.group(2),
+            "name": name,
+            "full_path": "{0}/{1}".format(group, name),
+            "group": group,
+            "description": desc,
+            "repo_url": "{0}/{1}.git".format(GITWEB_URL, path),
         }
-        projects.append(SimpleNamespace(**d))
+        repos.append(SimpleNamespace(**d))
 
-    return projects
+    return repos
 
 
 def gitweb_migrate_projects(glab, delete_existing=False):
-    for project in gitweb_projects():
+    for project in gitweb_repos_for_migration():
 
-        if delete_existing and glab.project_exists(project.name):
-            if not glab.project_delete_by_name(project.name):
+        if delete_existing and glab.project_exists(project):
+            if not glab.project_delete(project):
                 print("[!] unable to delete GitLab project {0}".format(project.name))
                 continue
+            else:
+                print("[!] deleted GitLab project {0}".format(project.name))
 
-        if glab.project_exists(project.name):
+        if glab.project_exists(project):
             print("[+] GitLab project {0} already exists".format(project.name))
             continue
 
@@ -153,9 +168,7 @@ def main():
     if not GITLAB_TOKEN:
         sys.exit("GITLAB_TOKEN env variable is missing")
 
-    glab = GitLabHelper(
-        GITLAB_URL, private_token=GITLAB_TOKEN, group=GITLAB_GROUP, api_version=4
-    )
+    glab = GitLabHelper(GITLAB_URL, private_token=GITLAB_TOKEN, api_version=4)
     if not glab.login():
         sys.exit("GitLab login failed")
 
