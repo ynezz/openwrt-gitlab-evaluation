@@ -157,6 +157,27 @@ def gitweb_migrate_projects(glab, delete_existing=False):
             print("[+] GitLab project {0} already exists".format(project.name))
             continue
 
+        if project.group != GITLAB_GROUP:
+            parent_id = glab.groups.list(search=GITLAB_GROUP, top_level_only=True)[0].id
+            for subgroup_name in project.group.split("/")[1:]:
+                subgroup_found = False
+                parent_group = glab.groups.get(parent_id)
+                for subgroup in parent_group.subgroups.list():
+                    if subgroup.name == subgroup_name:
+                        subgroup_id = subgroup.id
+                        subgroup_found = True
+                        break
+                if not subgroup_found:
+                    subgroup_id = glab.groups.create(
+                        {
+                            "name": subgroup_name,
+                            "path": subgroup_name,
+                            "parent_id": parent_id,
+                            "visibility": "public",
+                        }
+                    )
+                parent_id = subgroup_id
+
         if not glab.project_create(**vars(project)):
             print("[!] unable to create GitLab project {0}".format(project.name))
             continue
