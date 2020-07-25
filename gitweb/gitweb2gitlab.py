@@ -14,7 +14,7 @@ GITWEB_URL = "https://git.openwrt.org"
 
 GITLAB_URL = "https://gitlab.com"
 GITLAB_TOKEN = os.environ.get("GITLAB_TOKEN")
-GITLAB_GROUP = "openwrtorg"
+GITLAB_GROUP = "openwrt"
 
 
 class GitLabHelper(Gitlab):
