@@ -128,6 +128,8 @@ def gitweb_repos_for_migration():
             group = "{0}/project".format(GITLAB_GROUP)
         elif path == "openwrt/openwrt":
             group = "{0}/openwrt".format(GITLAB_GROUP)
+        elif "web/" in path or path == "web":
+            group = "{0}/web".format(GITLAB_GROUP)
         elif "svn-archive/" in path:
             group = "{0}/openwrt/svn-archive".format(GITLAB_GROUP)
 
